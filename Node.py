@@ -8,6 +8,8 @@ class Type(Enum):
     OPERATOR = 2
     TRIGONOMETRY = 3
 
+SHIT_HAPPENDED = False
+
 
 class Node:
     def __init__(self,type,level,char = None,value=None):
@@ -18,6 +20,75 @@ class Node:
         self.child1 = None
         self.child2 = None
         self.MUTATION_RATE = 0 #We use this parametar to determan mutation rate of node
+        self.CROSSOVER_PROBABILITY = 1
+
+
+    def getCrossoverProbability(self):
+        return self.CROSSOVER_PROBABILITY
+
+    def setCrossoverProbability(self,number,isOver = False):
+        if number > 0.95:
+            self.CROSSOVER_PROBABILITY = 1
+        if SHIT_HAPPENDED == True:
+            self.CROSSOVER_PROBABILITY = 0
+        else:
+            self.CROSSOVER_PROBABILITY = number
+
+    def getSubTree(self,path,appendCrossoverProb):
+        elem = False
+        if self.type == Type.FIRST or self.type == Type.TRIGONOMETRY:
+            randomNumber = random.random()
+            path.append('l')
+            print(str(randomNumber) + " : " + str(self.getCrossoverProbability()) + " u Node " + str(self.type) + " " + str(path))
+            if randomNumber < self.getCrossoverProbability():
+                print("THAT HAPPENED")
+                self.setCrossoverProbability(0)
+                print(self.child1 == None)
+                print(path)
+                SHIT_HAPPENDED = True
+                return path
+            else:
+                self.child1.setCrossoverProbability(self.getCrossoverProbability() + appendCrossoverProb)
+                self.child1.getSubTree(path,appendCrossoverProb)
+                if self.type == Type.TRIGONOMETRY:
+                    print(str(self.type))
+                    print("POPUJEM " + path.pop() +  " " + str(self.type))
+        elif self.type == Type.OPERATOR:
+            randomNumber = random.random()
+            path.append('l')
+            print(str(randomNumber) + " : " + str(self.getCrossoverProbability()) + " u Node " + str(self.type) + " " + str(path))
+            if randomNumber < self.getCrossoverProbability():
+                print("THAT HAPPENED")
+                self.setCrossoverProbability(0)
+                print(self.child1 == None)
+                print(path)
+                SHIT_HAPPENDED = True
+                elem = True
+                return path
+            else:
+                self.child1.setCrossoverProbability(self.getCrossoverProbability() + appendCrossoverProb)
+                self.child1.getSubTree(path,appendCrossoverProb)
+                print(str(self.type))
+            if elem == False:
+                randomNumber = random.random()
+                path.append('r')
+                print(str(randomNumber) + " : " + str(self.getCrossoverProbability()) + " u Node " + str(self.type) + " " + str(path))
+                if randomNumber < self.getCrossoverProbability():
+                    print("THAT HAPPENED")
+                    self.setCrossoverProbability(0)
+                    print(self.child2 == None)
+                    print(path)
+                    SHIT_HAPPENDED = True
+                    return path
+                else:
+                    self.child2.setCrossoverProbability(self.getCrossoverProbability() + appendCrossoverProb)
+                    self.child2.getSubTree(path,appendCrossoverProb)
+                    print(str(self.type))
+                    print("POPUJEM " + path.pop())
+        else:
+            print(str(self.type))
+            print("POPUJEM " + path.pop())
+
 
     def getMutationRate(self):
         return self.MUTATION_RATE
@@ -80,6 +151,15 @@ class Node:
                 self.child2.setMutationRate(self.getMutationRate())
                 self.child2.mutate(Tree)
 
+    def getDepthOfNode(self):
+        if self.type == Type.FIRST:
+            return self.child1.getDepthOfNode()
+        if self.type == Type.TERM:
+            return 1
+        if self.type == Type.TRIGONOMETRY:
+            return 1 + self.child1.getDepthOfNode()
+        if self.type == Type.OPERATOR:
+            return 1 + self.child1.getDepthOfNode() + self.child2.getDepthOfNode()
 
     def getValue(self,xValue):
         if self.type == Type.FIRST:
@@ -118,6 +198,7 @@ class Tree:
         self.maxDepth = maxDepth
         self.goals = goals # that is array of vectors
         self.tree = None # first is just one node, but it needs to be array of nodes
+        self.tree2 = None
         self.modificationTree = None #this is special modificiation node for making new subtrees
 
 
@@ -134,6 +215,16 @@ class Tree:
     def setModificationTreeOnNone(self):
         self.modificationTree = None
 
+
+    def crossover(self):
+        depth1 = self.tree.getDepthOfNode()
+        depth2 = self.tree2.getDepthOfNode()
+        self.tree.setCrossoverProbability(1/(depth1+1))
+        self.tree2.setCrossoverProbability(1 / (depth2 + 1))
+        firstSubTree,path1 = self.tree.getSubTree([],depth1+1)
+        secondSubTree,path2 = self.tree.getSubTree([],depth2+1)
+        self.tree.putCrossoverSubTree(path1,secondSubTree)
+        self.tree2.putCrossoverSubTree(path2,firstSubTree)
 
     #We use mutation on one of our's roots nodes!
     def mutation(self,mutationRate):
