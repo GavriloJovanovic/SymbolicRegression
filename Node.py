@@ -18,64 +18,63 @@ class Node:
         self.child1 = None
         self.child2 = None
 
+    def putSubTree(self,path,node):
+        print(self.stringNode() + " je za sada: "+ str(len(path)) + " path: " + str(path))
+        if len(path) > 1:
+            putSpot = path.pop(0)
+            if putSpot == 'l':
+                self.child1.putSubTree(path,node)
+            else:
+                self.child2.putSubTree( path, node)
+        else:
+            putSpot = path.pop(0)
+            if putSpot == 'l':
+                self.child1 = node
+            else:
+                self.child2 = node
+
 
     def getSubTree(self,appendCrossoverProb,tree):
-        elem = False
+
+        print("$ CROSSOVER PROB = " + str(tree.getCrossoverProbability()))
         if (self.type == Type.FIRST or self.type == Type.TRIGONOMETRY) and tree.getCrossoverProbability() > 0.001:
             randomNumber = random.random()
             tree.path.append('l')
-            print(str(randomNumber) + " : " + str(tree.getCrossoverProbability()) + " u Node " + str(self.type) + " " + str(tree.path))
             if randomNumber < tree.getCrossoverProbability():
-                print("THAT HAPPENED")
                 tree.setCrossoverProbability(0)
-                print(self.child1.stringNode())
-                print(tree.path)
                 tree.setFinalPath(tree.path)
-                return self.child1
+                tree.setCrossoverNode(self.child1)
             else:
-                 print("GETCROSSOVERPROB = " + str(tree.getCrossoverProbability()))
                  tree.setCrossoverProbability(tree.getCrossoverProbability() + appendCrossoverProb)
                  self.child1.getSubTree(appendCrossoverProb,tree)
                  if self.type == Type.TRIGONOMETRY and tree.getCrossoverProbability() > 0.001:
-                     print("OVDE SAM")
-                     print("POPUJEM " + tree.path.pop() +  " " + str(self.type) + " PROB:" + str(tree.getCrossoverProbability()))
+                     tree.path.pop()
 
         elif self.type == Type.OPERATOR and tree.getCrossoverProbability() > 0.001:
             randomNumber = random.random()
             tree.path.append('l')
-            print(str(randomNumber) + " : " + str(tree.getCrossoverProbability()) + " u Node " + str(self.type) + " " + str(tree.path))
             if randomNumber < tree.getCrossoverProbability():
-                print("THAT HAPPENED")
                 tree.setCrossoverProbability(0)
-                print(self.child1.stringNode())
-                print(tree.path)
-                elem = True
                 tree.setFinalPath(tree.path)
-                return self.child1
+                tree.setCrossoverNode(self.child1)
             else:
-                print("GETCROSSOVERPROB = " + str(tree.getCrossoverProbability()))
                 tree.setCrossoverProbability(tree.getCrossoverProbability() + appendCrossoverProb)
                 self.child1.getSubTree(appendCrossoverProb,tree)
                 if tree.getCrossoverProbability() > 0.001:
-                    print("POPUJEM " + tree.path.pop() +  " " + str(self.type) + " PROB:" + str(tree.getCrossoverProbability()))
+                    tree.path.pop()
 
-            if elem == False and tree.getCrossoverProbability() > 0.001:
+            if tree.getCrossoverProbability() > 0.001:
                 randomNumber = random.random()
                 tree.path.append('r')
-                print(str(randomNumber) + " : " + str(tree.getCrossoverProbability()) + " u Node " + str(self.type) + " " + str(tree.path))
                 if randomNumber < tree.getCrossoverProbability():
-                    print("THAT HAPPENED")
                     tree.setCrossoverProbability(0)
-                    print(self.child2.stringNode())
-                    print(tree.path)
                     tree.setFinalPath(tree.path)
-                    return self.child2
+                    tree.setCrossoverNode(self.child2)
                 else:
-                    print("GETCROSSOVERPROB = " + str(tree.getCrossoverProbability()))
                     tree.setCrossoverProbability(tree.getCrossoverProbability() + appendCrossoverProb)
                     self.child2.getSubTree(appendCrossoverProb,tree)
                     if tree.getCrossoverProbability() > 0.001:
-                        print("POPUJEM " + tree.path.pop() +  " " + str(self.type) + " PROB:" + str(tree.getCrossoverProbability()))
+                        tree.path.pop()
 
 
     def setChild1(self,node):
@@ -187,30 +186,58 @@ class Tree:
         self.goals = goals # that is array of vectors
         self.tree = None # first is just one node, but it needs to be array of nodes
         self.tree2 = None
+
+
         self.modificationTree = None #this is special modificiation node for making new subtrees
 
-        # attributes for algorithms
+        # attributes for crossover and mutation
         self.MUTATION_RATE = 0 #We use this parametar to determan mutation rate of node
         self.CROSSOVER_PROBABILITY = 1
         self.path = []
         self.finalPath = []
+        self.returnedNode = None
+        #########
+
+    def setCrossoverNode(self,node):
+        self.returnedNode = node
+
+    def getCrossoverNode(self):
+        return self.returnedNode
 
     def setFinalPath(self,x):
         print("Putanja koju namestam je " + str(x))
         self.finalPath = x
 
-    def getSubTree(self,appendNum):
+    def crossover(self):
         self.path = []
         self.finalPath = []
-        x = self.tree.getSubTree(appendNum,self)
-        print("UNGABUNGA " +str(self.finalPath))
-        print(x == None)
-        return  self.finalPath,x
+        appendNode = self.tree.getDepthOfNode()
+        self.setCrossoverProbabilityWithoutCheck(1/appendNode)
+        self.tree.getSubTree(1/appendNode,self)
+        path1 = self.finalPath
+        print("PATH1 " + str(path1))
+        subTree1 = self.getCrossoverNode()
+        ###
+        self.path = []
+        self.finalPath = []
+        self.setCrossoverNode(None)
+        appendNode = self.tree2.getDepthOfNode()
+        self.setCrossoverProbabilityWithoutCheck(1 / appendNode)
+        self.tree2.getSubTree(1/appendNode,self)
+        path2 = self.finalPath
+        subTree2 = self.getCrossoverNode()
+        ###
+        self.tree2.putSubTree(path2,subTree1)
+        self.tree.putSubTree(path1, subTree2)
+
 
     def getCrossoverProbability(self):
         return self.CROSSOVER_PROBABILITY
 
-    def setCrossoverProbability(self,number,isOver = False):
+    def setCrossoverProbabilityWithoutCheck(self,number):
+        self.CROSSOVER_PROBABILITY = number
+
+    def setCrossoverProbability(self,number):
         if number > 0.95:
             self.CROSSOVER_PROBABILITY = 1
         if number == 0 or self.getCrossoverProbability() == 0:
@@ -236,17 +263,6 @@ class Tree:
 
     def setModificationTreeOnNone(self):
         self.modificationTree = None
-
-
-    def crossover(self):
-        depth1 = self.tree.getDepthOfNode()
-        depth2 = self.tree2.getDepthOfNode()
-        self.tree.setCrossoverProbability(1/(depth1+1))
-        self.tree2.setCrossoverProbability(1 / (depth2 + 1))
-        firstSubTree,path1 = self.tree.getSubTree([],depth1+1)
-        secondSubTree,path2 = self.tree.getSubTree([],depth2+1)
-        self.tree.putCrossoverSubTree(path1,secondSubTree)
-        self.tree2.putCrossoverSubTree(path2,firstSubTree)
 
     #We use mutation on one of our's roots nodes!
     def mutation(self,mutationRate):
@@ -283,6 +299,9 @@ class Tree:
     def setTree(self,node):
         self.tree = node
 
+    def setTree2(self,node):
+        self.tree2 = node
+
     def getModTree(self):
         return self.modificationTree
 
@@ -301,6 +320,7 @@ class Tree:
 
         if currentNode == None:
             if areWeGenerateFullTree == True:
+                self.modificationTree = None
                 self.modificationTree = Node(Type.FIRST,0)
                 self.modificationTree.child1 = self.generateRandomNode(depth,xValue)
                 self.generateSubTree(self.modificationTree.child1,depth,nodeNum,xValue)
