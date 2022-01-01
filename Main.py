@@ -9,7 +9,7 @@ import Node
 try:
 
     drvo = Node.Tree(0,5,0)
-    drvo.generateSubTree(None,8,8,1,True)
+    drvo.generateSubTree(None,12,12,1,True)
     print("Prvi ispis, kako nam izgleda nasumicno drvo koje je napravljeno")
     print(drvo.modificationTree.stringNode())
     print("Prvi ispis, koja je vrednost drveta za x = 1")
@@ -17,13 +17,14 @@ try:
     drvo.setTree(drvo.getModTree())
     print("Drugi ispis, postavli smo da je drvo modifikovano stablo iz generisanog sub tree")
     print(drvo.tree.stringNode())
-    print('===================================================')
-
+    print("===================================================")
     appendNod = drvo.tree.getDepthOfNode()
     path = []
-    drvo.tree.setCrossoverProbability(1/appendNod)
-    path = drvo.tree.getSubTree(path,1/appendNod)
+    drvo.setCrossoverProbability(1/appendNod)
+    path,x = drvo.getSubTree(1/appendNod)
     print("Putanja je" + str(path))
+    print(x.stringNode())
+
 
 except IOError:
     print("Greska")
