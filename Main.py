@@ -4,6 +4,7 @@ import csv
 import matplotlib.pyplot as plt
 import Node
 
+import random
 
 
 try:
@@ -25,7 +26,7 @@ try:
     path,x = drvo.getSubTree(1/appendNod)
     print("Putanja je" + str(path))
     print(x.stringNode())
-    '''
+    
 
     drvo = Node.Tree(0,5,0)
     drvo.generateSubTree(None, 5, 5, 1, True)
@@ -37,7 +38,15 @@ try:
     drvo.crossover()
     print(drvo.tree.stringNode())
     print(drvo.tree2.stringNode())
+    '''
 
+    X = np.linspace(1,10,1000)
+    #def __init__(self,goals,POPULATION_NUMBER,ITERATION_NUMBER,TOURNAMENT_SIZE,ELITISM_SIZE,MUTATION_RATE)
+    trening = [[1,-10],[2,-8],[3,-4],[4,4],[5,15],[6,25],[7,49],[8,67]]
+    random.seed(12345)
+    drvo = Node.GP(trening,20,1000,3,2,0.05)
+
+    drvo.GP()
 
 
 except IOError:

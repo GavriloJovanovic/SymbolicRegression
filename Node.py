@@ -1,6 +1,7 @@
 from enum import Enum
 import random
 import numpy as np
+import sys
 
 class Type(Enum):
     FIRST = 0
@@ -19,13 +20,12 @@ class Node:
         self.child2 = None
 
     def putSubTree(self,path,node):
-        print(self.stringNode() + " je za sada: "+ str(len(path)) + " path: " + str(path))
         if len(path) > 1:
             putSpot = path.pop(0)
-            if putSpot == 'l':
+            if putSpot == 'l' and self.child1 is not None:
                 self.child1.putSubTree(path,node)
-            else:
-                self.child2.putSubTree( path, node)
+            elif putSpot == 'r' and self.child2 is not None:
+                self.child2.putSubTree(path,node)
         else:
             putSpot = path.pop(0)
             if putSpot == 'l':
@@ -34,10 +34,10 @@ class Node:
                 self.child2 = node
 
 
+    #zapamtiti sve validne cvorove (set)
+    #l pa d, broj covrova, [0,broj], 7
     def getSubTree(self,appendCrossoverProb,tree):
-
-        print("$ CROSSOVER PROB = " + str(tree.getCrossoverProbability()))
-        if (self.type == Type.FIRST or self.type == Type.TRIGONOMETRY) and tree.getCrossoverProbability() > 0.001:
+        if (self.type == Type.FIRST or self.type == Type.TRIGONOMETRY):
             randomNumber = random.random()
             tree.path.append('l')
             if randomNumber < tree.getCrossoverProbability():
@@ -50,7 +50,7 @@ class Node:
                  if self.type == Type.TRIGONOMETRY and tree.getCrossoverProbability() > 0.001:
                      tree.path.pop()
 
-        elif self.type == Type.OPERATOR and tree.getCrossoverProbability() > 0.001:
+        elif self.type == Type.OPERATOR:
             randomNumber = random.random()
             tree.path.append('l')
             if randomNumber < tree.getCrossoverProbability():
@@ -87,6 +87,7 @@ class Node:
         return self.type
 
     def stringNode(self):
+        #print("TYPE U STRING NODE: "+ str(self.type))
         if self.type == Type.FIRST:
             return self.child1.stringNode()
         if self.type == Type.TERM:
@@ -107,12 +108,12 @@ class Node:
             if randomMutation < tree.getMutationRate():
                 tree.generateSubTree(None,3,3,1)
                 self.child1 = tree.getModTree()
-                print("Mutiram " + str(tree.getMutationRate()) + " : " + self.child1.stringNode())
+                #print("Mutiram " + str(tree.getMutationRate()) + " : " + self.child1.stringNode())
                 #We are allways setting setMutationRate on 0 after we succesfully mutate a node
                 tree.setMutationRate(0)
             else:
                 tree.setMutationRate(tree.getMutationRate())
-                print(tree.getMutationRate())
+                #print(tree.getMutationRate())
                 self.child1.mutate(tree)
 
         elif self.type == Type.OPERATOR:
@@ -120,22 +121,22 @@ class Node:
             if randomMutation < tree.getMutationRate():
                 tree.generateSubTree(None,3,3,1)
                 self.child1 = tree.getModTree()
-                print("Mutiram " + str(tree.getMutationRate()) + " : " + self.child1.stringNode())
+                #print("Mutiram " + str(tree.getMutationRate()) + " : " + self.child1.stringNode())
                 tree.setMutationRate(0)
             else:
                 tree.setMutationRate(tree.getMutationRate())
-                print(tree.getMutationRate())
+                #print(tree.getMutationRate())
                 self.child1.mutate(tree)
 
             randomMutation = random.random()
             if randomMutation < tree.getMutationRate():
                 tree.generateSubTree(None,3,3,1)
-                self.child2 = Tree.getModTree()
-                print("Mutiram " + str(tree.getMutationRate()) + " : " + self.child1.stringNode())
+                self.child2 = tree.getModTree()
+                #print("Mutiram " + str(tree.getMutationRate()) + " : " + self.child1.stringNode())
                 tree.setMutationRate(0)
             else:
                 tree.setMutationRate(tree.getMutationRate())
-                print(tree.getMutationRate())
+                #print(tree.getMutationRate())
                 self.child2.mutate(tree)
 
     def getDepthOfNode(self):
@@ -168,10 +169,7 @@ class Node:
             elif self.char == "*":
                 return self.child1.getValue(xValue) * self.child2.getValue(xValue)
             else:
-                if self.child2.getValue(xValue) != 0:
-                    return self.child1.getValue(xValue) / self.child2.getValue(xValue)
-                else:
-                    exit(-1)
+                return self.child1.getValue(xValue) / (self.child2.getValue(xValue) + 0.000000001)
 
 
 
@@ -179,24 +177,160 @@ class Node:
   #  def evaluete(self):
 
 
-class Tree:
-    def __init__(self,value,maxDepth,goals):
+class GP:
+    def __init__(self,goals,POPULATION_NUMBER,ITERATION_NUMBER,TOURNAMENT_SIZE,ELITISM_SIZE,MUTATION_RATE):
         self.value = 0
-        self.maxDepth = maxDepth
         self.goals = goals # that is array of vectors
         self.tree = None # first is just one node, but it needs to be array of nodes
         self.tree2 = None
-
-
+        self.ITERATION_NUMBER = ITERATION_NUMBER
+        self.POPULATION_NUMBER = POPULATION_NUMBER
+        self.ELITISM_SIZE = ELITISM_SIZE
+        self.TOURNAMENT_SIZE = TOURNAMENT_SIZE
+        self.population = [] #MATH IZRAZ + FITNESS
         self.modificationTree = None #this is special modificiation node for making new subtrees
 
         # attributes for crossover and mutation
-        self.MUTATION_RATE = 0 #We use this parametar to determan mutation rate of node
+        self.MUTATION_RATE_INITIAL = MUTATION_RATE #We use this parametar to determan mutation rate of node
+        self.MUTATION_RATE = MUTATION_RATE
         self.CROSSOVER_PROBABILITY = 1
         self.path = []
         self.finalPath = []
         self.returnedNode = None
+
+        sys.setrecursionlimit(10000)
+
+        self.createRandomPopulation()
+        self.evaluateFirstFitness()
         #########
+
+
+    def evaluateFirstFitness(self):
+        for i in range(self.POPULATION_NUMBER):
+            self.population[i][1] = self.calculateFitness(i)
+
+    def GP(self):
+        #print("POCETAK")
+        #for j in range(self.POPULATION_NUMBER):
+            #print("Izraz broj. " + str(j) + " je " + self.population[j][0].stringNode() + " a fitness je: " + str(self.population[j][1]))
+        #print("==========================================================================")
+
+
+        newPopulation = []
+        for i in range(self.ITERATION_NUMBER):
+            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            self.population.sort(key=lambda tup: tup[1])
+            print("NAJBOLJE: Generacija " + str(i) + " izraz: " + self.population[0][0].stringNode() + " = " + str(self.calculateFitness(0)))
+            print("NAJGORE: Generacija " + str(i) + " izraz: " + self.population[-1][0].stringNode() + " = " + str(self.calculateFitness(self.POPULATION_NUMBER-1)))
+            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            print("Pre promene u generaiciji")
+            for j in range(len(self.population)):
+                 print("Izraz broj. " + str(j) + " je " + self.population[j][0].stringNode() + " a fitness je: " + str(self.population[j][1]))
+
+            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            j = 0
+            while j < self.ELITISM_SIZE:
+                newPopulation.append(self.population[j])
+                print("APENDUJEM U GENERACIJI: " + str(i) + " izraz: " + newPopulation[j][0].stringNode() + " -> " + str(self.calculateFitness(j)))
+                j = j + 1
+            print("Duzina nove populacije: " + str(len(self.population)))
+            while j < self.POPULATION_NUMBER:
+                parent1Index = self.tournamentSelection()
+                parent2Index = self.tournamentSelection()
+                self.crossover(parent1Index,parent2Index)
+                self.resetMutationRate()
+                self.population[parent1Index][0].mutate(self)
+                self.resetMutationRate()
+                self.population[parent2Index][0].mutate(self)
+                self.population[parent1Index][1] = self.calculateFitness(parent1Index)
+                self.population[parent2Index][1] = self.calculateFitness(parent2Index)
+                newPopulation.append(self.population[parent1Index])
+                newPopulation.append(self.population[parent2Index])
+                print("APENDUJEM U GENERACIJI: " + str(i) + " izraz: " + newPopulation[j][0].stringNode()+ " -> " + str(self.calculateFitness(j)))
+                print("APENDUJEM U GENERACIJI: " + str(i) + " izraz: " + newPopulation[j+1][0].stringNode()+ " -> " + str(self.calculateFitness(j+1)))
+                #print("APENDUJEMO: ")
+                #print(newPopulation[j][0].stringNode())
+                #print(newPopulation[j+1][0].stringNode())
+
+                #print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+                j = j + 2
+
+            self.population = newPopulation
+            newPopulation = []
+            print("Duzina populacije nakon tranformacije: " + str(len(self.population)))
+
+            for j in range(len(self.population)):
+                 print("Izraz broj. " + str(j) + " je " + self.population[j][0].stringNode() + " a fitness je: " + str(self.population[j][1]))
+            #print("STARA POPULACIJA")
+            #for j in range(self.POPULATION_NUMBER):
+            #    print("Izraz broj. " + str(j) + " je " + self.population[j][0].stringNode() + " a fitness je: " + str(self.population[j][1]))
+            #print("===================================================================================")
+            #print("NOVA POPULACIJA")
+            #for j in range(self.POPULATION_NUMBER):
+            #    print("Izraz broj. " + str(j) + " je " + newPopulation[j][0].stringNode() + " a fitness je: " + str(newPopulation[j][1]))
+
+
+            #print("======================================================================")
+            #print("Ispisujemo izrze")
+            #for j in range(self.POPULATION_NUMBER):
+                #print("Izraz broj. " + str(j) + " je " + self.population[j][0].stringNode() + " a fitness je: " + str(self.population[j][1]))
+
+            #print("PROVERAVAMO JEDNAKOST: ", end="")
+            #bul = True
+            #for j in range(self.POPULATION_NUMBER):
+                #if self.population[j] != newPopulation[j]:
+                    #bul = False
+            #print(bul)
+
+
+
+
+
+
+    def tournamentSelection(self):
+        self.TOURNAMENT_SIZE = 5
+        listIndexes = list(range(self.POPULATION_NUMBER))
+        participants = random.choices(listIndexes,k=self.TOURNAMENT_SIZE)
+        minNumber = float("inf")
+        returnIndex = 0
+
+        for i in range(self.TOURNAMENT_SIZE):
+            if self.population[participants[i]][1] < minNumber:
+                returnIndex = participants[i]
+        return returnIndex
+
+    def selection(self):
+        iterationIndex = self.SELECTION_NUMBER
+        print("BEZ MUTACIJE SELEKCIJA")
+        for i in range(self.POPULATION_NUMBER):
+            print(self.population[i][0].stringNode())
+            print("----------------------------------")
+        print("------------------------------")
+        while True:
+            self.crossover(iterationIndex,iterationIndex+1)
+            iterationIndex += 2
+            if iterationIndex == self.POPULATION_NUMBER:
+                break
+        print("POSLE MUTACIJA SELEKCIJA")
+        for i in range(self.POPULATION_NUMBER):
+            if i == self.SELECTION_NUMBER:
+                print("MUTIRANI")
+            print(self.population[i][0].stringNode())
+            print("----------------------------------")
+        print("------------------------------")
+
+    def createRandomPopulation(self):
+        for i in range(self.POPULATION_NUMBER):
+            self.generateSubTree(None, 3, 3, 1, True)
+            self.population.append([self.modificationTree,0])
+
+    def getPopulation(self):
+        return self.population
+
+    def getPopulationIndex(self,index):
+        return self.population[index]
+
 
     def setCrossoverNode(self,node):
         self.returnedNode = node
@@ -205,30 +339,31 @@ class Tree:
         return self.returnedNode
 
     def setFinalPath(self,x):
-        print("Putanja koju namestam je " + str(x))
         self.finalPath = x
 
-    def crossover(self):
+    def crossover(self,index1,index2):
         self.path = []
         self.finalPath = []
-        appendNode = self.tree.getDepthOfNode()
+        appendNode = self.population[index1][0].getDepthOfNode()
         self.setCrossoverProbabilityWithoutCheck(1/appendNode)
-        self.tree.getSubTree(1/appendNode,self)
+        self.population[index1][0].getSubTree(1/appendNode,self)
         path1 = self.finalPath
-        print("PATH1 " + str(path1))
         subTree1 = self.getCrossoverNode()
         ###
         self.path = []
         self.finalPath = []
         self.setCrossoverNode(None)
-        appendNode = self.tree2.getDepthOfNode()
+        appendNode = self.population[index2][0].getDepthOfNode()
         self.setCrossoverProbabilityWithoutCheck(1 / appendNode)
-        self.tree2.getSubTree(1/appendNode,self)
+        self.population[index2][0].getSubTree(1/appendNode,self)
         path2 = self.finalPath
         subTree2 = self.getCrossoverNode()
         ###
-        self.tree2.putSubTree(path2,subTree1)
-        self.tree.putSubTree(path1, subTree2)
+        self.population[index2][0].putSubTree(path2,subTree1)
+        self.population[index1][0].putSubTree(path1, subTree2)
+
+    def calculateFitnessInd(self):
+        return self.calculateFitness(0)
 
 
     def getCrossoverProbability(self):
@@ -245,6 +380,9 @@ class Tree:
         else:
             self.CROSSOVER_PROBABILITY = number
 
+    def resetMutationRate(self):
+        self.MUTATION_RATE = self.MUTATION_RATE_INITIAL
+
     def getMutationRate(self):
         return self.MUTATION_RATE
 
@@ -252,12 +390,12 @@ class Tree:
         self.MUTATION_RATE = num
 
     #racuna fitness, jos nepotreban
-    def calculateFitness(self):
+    def calculateFitness(self,index):
         err = 0
         testLength = len(self.goals)
         for i in range(testLength):
-            err = err + (self.nodes[0].getValue(self.goals[i][0]) - self.goals[i][1]) \
-                  * (self.nodes[0].getValue(self.goals[i][0]) - self.goals[i][1])
+            err = err + (self.getPopulationIndex(index)[0].getValue(self.goals[i][0]) - self.goals[i][1]) \
+                  * (self.getPopulationIndex(index)[0].getValue(self.goals[i][0]) - self.goals[i][1])
         return err
 
 
@@ -275,12 +413,22 @@ class Tree:
     # funkcija koja generise nasumican cvor
     def generateRandomNode(self, depth, xValue):
         randType = None
-        if depth == 1:
+        if depth <= 1:
             randType = Type.TERM
         elif depth == 2:
-            randType = random.choice([Type.TERM, Type.TRIGONOMETRY])
+            random1 = random.random()
+            if random1 < 0.666667:
+                randType = Type.OPERATOR
+            else:
+                randType = Type.TRIGONOMETRY
         else:
-            randType = random.choice([Type.TERM,Type.TRIGONOMETRY,Type.OPERATOR])
+            random2 = random.random()
+            if random2 < 0.5714:
+                randType = Type.OPERATOR
+            elif random2 >= 0.5714 and random2 < 0.8571:
+                randType = Type.TRIGONOMETRY
+            else:
+                randType = Type.TERM
 
         if randType == Type.OPERATOR:
             randomOperator = random.choice(['+','-','*','/'])
@@ -288,6 +436,8 @@ class Tree:
         elif randType == Type.TRIGONOMETRY:
             randomTrig = random.choice(['cos','sin'])
             return Node(Type.TRIGONOMETRY,-1,randomTrig)
+
+
         elif randType == Type.TERM:
             randNumberTerm = random.random()
             if randNumberTerm < 0.5:
@@ -349,3 +499,4 @@ class Tree:
                 depthForGenerating = nodeNum
             currentNode.child2 = self.generateRandomNode(depthForGenerating,xValue)
             self.generateSubTree(currentNode.child2,nodeNum-1,nodeNum-1,xValue)
+
