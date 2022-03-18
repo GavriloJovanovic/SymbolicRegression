@@ -43,10 +43,13 @@ try:
     X = np.linspace(1,10,1000)
     #def __init__(self,goals,POPULATION_NUMBER,ITERATION_NUMBER,TOURNAMENT_SIZE,ELITISM_SIZE,MUTATION_RATE)
     trening = [[1,-10],[2,-8],[3,-4],[4,4],[5,15],[6,25],[7,49],[8,67]]
-    random.seed(12345)
-    drvo = Node.GP(trening,20,1000,3,2,0.05)
-
-    drvo.GP()
+    #random.seed(12345)
+    drvo = Node.GP(trening,2,1000,2,2,0.05)
+    drvo.printPopulation()
+    print("============================================================")
+    drvo.betterCrossover(0,1)
+    drvo.printPopulation()
+    #drvo.GP()
 
 
 except IOError:

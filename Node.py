@@ -19,6 +19,25 @@ class Node:
         self.child1 = None
         self.child2 = None
 
+#RADI
+    def getSubTreeFromPath(self,path,GP):
+        if len(path) > 1:
+            putSpot = path.pop(0)
+            if putSpot == 'l' and self.child1 is not None:
+                self.child1.getSubTreeFromPath(path,GP)
+            elif putSpot == 'r' and self.child2 is not None:
+                self.child2.getSubTreeFromPath(path,GP)
+        else:
+            putSpot = path.pop(0)
+            if putSpot == 'l':
+                print("Podstablo je: " + self.child1.stringNode())
+                print(self.child1 is None)
+                GP.setCrossoverNode(self.child1)
+            else:
+                print("Podstablo je: " + self.child2.stringNode())
+                print(self.child2 is None)
+                GP.setCrossoverNode(self.child2)
+
     def putSubTree(self,path,node):
         if len(path) > 1:
             putSpot = path.pop(0)
@@ -26,12 +45,57 @@ class Node:
                 self.child1.putSubTree(path,node)
             elif putSpot == 'r' and self.child2 is not None:
                 self.child2.putSubTree(path,node)
-        else:
+        elif len(path) == 1:
             putSpot = path.pop(0)
             if putSpot == 'l':
                 self.child1 = node
             else:
                 self.child2 = node
+
+#RADI
+    def getPath(self,GP):
+        if GP.numberForMakingLocalPath==0:
+            return
+        else:
+            if self.type == Type.FIRST:
+                print("Rekurzija 1. samo levo: " + str(GP.numberForMakingLocalPath) + " : " + str(GP.localPath),end=" ")
+                print(self.stringNode())
+                GP.numberForMakingLocalPath = GP.numberForMakingLocalPath-1
+                GP.localPath.append('l')
+                self.child1.getPath(GP)
+            elif self.type == Type.TRIGONOMETRY:
+                print("Rekurzija samo levo: " + str(GP.numberForMakingLocalPath) + " : " + str(GP.localPath),end=" ")
+                print(self.stringNode())
+                GP.numberForMakingLocalPath = GP.numberForMakingLocalPath -1
+                GP.localPath.append('l')
+                self.child1.getPath(GP)
+                if GP.numberForMakingLocalPath > 0:
+                    GP.localPath.pop()
+            elif self.type == Type.OPERATOR:
+                print("Rekurzija levo: " + str(GP.numberForMakingLocalPath) + " : " + str(GP.localPath), end=" ")
+                print(self.stringNode())
+                GP.numberForMakingLocalPath = GP.numberForMakingLocalPath - 1
+                GP.localPath.append('l')
+                self.child1.getPath(GP)
+                if GP.numberForMakingLocalPath > 0:
+                    GP.localPath.pop()
+                if GP.numberForMakingLocalPath > 0:
+                    print("Rekurzija u desno: " + str(GP.numberForMakingLocalPath) + " : " + str(GP.localPath), end=" ")
+                    print(self.stringNode())
+                    GP.numberForMakingLocalPath = GP.numberForMakingLocalPath - 1
+                    GP.localPath.append('r')
+                    self.child2.getPath(GP)
+                    if GP.numberForMakingLocalPath > 0:
+                        GP.localPath.pop()
+                else:
+                    return
+
+    def getRandomPath(self,GP):
+        numberOfNodes = self.getDepthOfNode()
+        arrayOfChoice = list(range(1,numberOfNodes+1))
+        GP.numberForMakingLocalPath = random.choice(arrayOfChoice)
+        print("Izabrao sam broj: " + str(GP.numberForMakingLocalPath))
+        self.getPath(GP)
 
 
     #zapamtiti sve validne cvorove (set)
@@ -198,12 +262,22 @@ class GP:
         self.finalPath = []
         self.returnedNode = None
 
+        self.localPath = []
+        self.numberForMakingLocalPath = 0
+
         sys.setrecursionlimit(10000)
+
+
 
         self.createRandomPopulation()
         self.evaluateFirstFitness()
         #########
 
+
+    def setPath(self,path):
+        self.path = []
+        for x in path:
+            self.path.append(x)
 
     def evaluateFirstFitness(self):
         for i in range(self.POPULATION_NUMBER):
@@ -341,6 +415,35 @@ class GP:
     def setFinalPath(self,x):
         self.finalPath = x
 
+
+    def betterCrossover(self,index1,index2):
+        # UZIMAMO NASUMICNO PODSTABLO1
+        self.localPath = []
+        self.setCrossoverNode(None)
+        self.population[index1][0].getRandomPath(self)
+        self.setPath(self.localPath)
+        self.population[index1][0].getSubTreeFromPath(self.localPath,self)
+        print("MUFLJUZ:" + str(self.path))
+        subtree1 = self.getCrossoverNode()
+        path1 = self.path
+        self.localPath = []
+        self.setCrossoverNode(None)
+        self.population[index2][0].getRandomPath(self)
+        self.setPath(self.localPath)
+        self.population[index2][0].getSubTreeFromPath(self.localPath,self)
+        subtree2 = self.getCrossoverNode()
+        path2 = self.path
+        print("+++++++++++++++++++++++++++++++++++++++++++++++++")
+        print(subtree1.stringNode())
+        print(path1)
+        print(subtree2.stringNode())
+        print(path2)
+        print("+++++++++++++++++++++++++++++++++++++++++++++++++")
+        self.population[index2][0].putSubTree(path2,subtree1)
+        self.population[index1][0].putSubTree(path1,subtree2)
+
+
+
     def crossover(self,index1,index2):
         self.path = []
         self.finalPath = []
@@ -349,6 +452,10 @@ class GP:
         self.population[index1][0].getSubTree(1/appendNode,self)
         path1 = self.finalPath
         subTree1 = self.getCrossoverNode()
+        print("#1")
+        print(str(path1))
+        print(subTree1.stringNode())
+        print("------------------------------------------------")
         ###
         self.path = []
         self.finalPath = []
@@ -358,6 +465,10 @@ class GP:
         self.population[index2][0].getSubTree(1/appendNode,self)
         path2 = self.finalPath
         subTree2 = self.getCrossoverNode()
+        print("#2")
+        print(path2)
+        print(subTree2.stringNode())
+        print("------------------------------------------------")
         ###
         self.population[index2][0].putSubTree(path2,subTree1)
         self.population[index1][0].putSubTree(path1, subTree2)
@@ -379,6 +490,9 @@ class GP:
             self.CROSSOVER_PROBABILITY = 0
         else:
             self.CROSSOVER_PROBABILITY = number
+
+    def printLocalPath(self):
+        print("Printing local path: " + str(self.localPath))
 
     def resetMutationRate(self):
         self.MUTATION_RATE = self.MUTATION_RATE_INITIAL
@@ -445,6 +559,10 @@ class GP:
                 return Node(Type.TERM, -1, str(randomTermNumber), randomTermNumber)
             else:
                 return Node(Type.TERM, -1, 'x', xValue)
+
+    def printPopulation(self):
+        for x in self.population:
+            print(x[0].stringNode())
 
     def setTree(self,node):
         self.tree = node
