@@ -30,12 +30,8 @@ class Node:
         else:
             putSpot = path.pop(0)
             if putSpot == 'l':
-                print("Podstablo je: " + self.child1.stringNode())
-                print(self.child1 is None)
                 GP.setCrossoverNode(self.child1)
             else:
-                print("Podstablo je: " + self.child2.stringNode())
-                print(self.child2 is None)
                 GP.setCrossoverNode(self.child2)
 
     def putSubTree(self,path,node):
@@ -58,30 +54,22 @@ class Node:
             return
         else:
             if self.type == Type.FIRST:
-                print("Rekurzija 1. samo levo: " + str(GP.numberForMakingLocalPath) + " : " + str(GP.localPath),end=" ")
-                print(self.stringNode())
                 GP.numberForMakingLocalPath = GP.numberForMakingLocalPath-1
                 GP.localPath.append('l')
                 self.child1.getPath(GP)
             elif self.type == Type.TRIGONOMETRY:
-                print("Rekurzija samo levo: " + str(GP.numberForMakingLocalPath) + " : " + str(GP.localPath),end=" ")
-                print(self.stringNode())
                 GP.numberForMakingLocalPath = GP.numberForMakingLocalPath -1
                 GP.localPath.append('l')
                 self.child1.getPath(GP)
                 if GP.numberForMakingLocalPath > 0:
                     GP.localPath.pop()
             elif self.type == Type.OPERATOR:
-                print("Rekurzija levo: " + str(GP.numberForMakingLocalPath) + " : " + str(GP.localPath), end=" ")
-                print(self.stringNode())
                 GP.numberForMakingLocalPath = GP.numberForMakingLocalPath - 1
                 GP.localPath.append('l')
                 self.child1.getPath(GP)
                 if GP.numberForMakingLocalPath > 0:
                     GP.localPath.pop()
                 if GP.numberForMakingLocalPath > 0:
-                    print("Rekurzija u desno: " + str(GP.numberForMakingLocalPath) + " : " + str(GP.localPath), end=" ")
-                    print(self.stringNode())
                     GP.numberForMakingLocalPath = GP.numberForMakingLocalPath - 1
                     GP.localPath.append('r')
                     self.child2.getPath(GP)
@@ -94,7 +82,7 @@ class Node:
         numberOfNodes = self.getDepthOfNode()
         arrayOfChoice = list(range(1,numberOfNodes+1))
         GP.numberForMakingLocalPath = random.choice(arrayOfChoice)
-        print("Izabrao sam broj: " + str(GP.numberForMakingLocalPath))
+        #print("Izabrao sam broj: " + str(GP.numberForMakingLocalPath))
         self.getPath(GP)
 
 
@@ -160,6 +148,23 @@ class Node:
             return self.char + "(" + self.child1.stringNode() + ")"
         else:
             return "( " + self.child1.stringNode() + " " + self.char + " " + self.child2.stringNode() + " )"
+
+    def mutateInPath(self,path,GP):
+        if len(path) > 1:
+            putSpot = path.pop(0)
+            if putSpot == 'l' and self.child1 is not None:
+                self.child1.getSubTreeFromPath(path,GP)
+            elif putSpot == 'r' and self.child2 is not None:
+                self.child2.getSubTreeFromPath(path,GP)
+        else:
+            putSpot = path.pop(0)
+            if putSpot == 'l':
+                GP.generateSubTree(None,3,3,1)
+                self.child1 = GP.getModTree()
+            else:
+                GP.generateSubTree(None, 3, 3, 1)
+                self.child2 = GP.getModTree()
+
 
     def mutate(self,tree):
         # We are mutationg FIRST,TRIGONOMETRY and OPERATORS nodes becouse
@@ -294,41 +299,50 @@ class GP:
         for i in range(self.ITERATION_NUMBER):
             print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
             self.population.sort(key=lambda tup: tup[1])
-            print("NAJBOLJE: Generacija " + str(i) + " izraz: " + self.population[0][0].stringNode() + " = " + str(self.calculateFitness(0)))
-            print("NAJGORE: Generacija " + str(i) + " izraz: " + self.population[-1][0].stringNode() + " = " + str(self.calculateFitness(self.POPULATION_NUMBER-1)))
-            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-            print("Pre promene u generaiciji")
-            for j in range(len(self.population)):
-                 print("Izraz broj. " + str(j) + " je " + self.population[j][0].stringNode() + " a fitness je: " + str(self.population[j][1]))
+            #print("NAJBOLJE: Generacija " + str(i) + " izraz: " + self.population[0][0].stringNode() + " = " + str(self.calculateFitness(0)))
+            #print("NAJGORE: Generacija " + str(i) + " izraz: " + self.population[-1][0].stringNode() + " = " + str(self.calculateFitness(self.POPULATION_NUMBER-1)))
+            #print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            #print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            #print("Pre promene u generaiciji")
+            #for j in range(len(self.population)):
+            #     print("Izraz broj. " + str(j) + " je " + self.population[j][0].stringNode() + " a fitness je: " + str(self.population[j][1]))
 
-            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            #print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
             j = 0
             while j < self.ELITISM_SIZE:
                 newPopulation.append(self.population[j])
-                print("APENDUJEM U GENERACIJI: " + str(i) + " izraz: " + newPopulation[j][0].stringNode() + " -> " + str(self.calculateFitness(j)))
+                #print("APENDUJEM U GENERACIJI: " + str(i) + " izraz: " + newPopulation[j][0].stringNode() + " -> " + str(self.calculateFitness(j)))
                 j = j + 1
             print("Duzina nove populacije: " + str(len(self.population)))
+            ### Having the one copy of the poplations
+            copyPopulation = []
+            for x in self.population:
+                copyPopulation.append(x)
+
             while j < self.POPULATION_NUMBER:
+                copyPopulation = []
+                for x in self.population:
+                    copyPopulation.append(x)
                 parent1Index = self.tournamentSelection()
                 parent2Index = self.tournamentSelection()
-                self.crossover(parent1Index,parent2Index)
-                self.resetMutationRate()
-                self.population[parent1Index][0].mutate(self)
-                self.resetMutationRate()
-                self.population[parent2Index][0].mutate(self)
+                self.betterCrossover(parent1Index,parent2Index)
+                self.betterMutation(parent1Index)
+                self.betterMutation(parent2Index)
                 self.population[parent1Index][1] = self.calculateFitness(parent1Index)
                 self.population[parent2Index][1] = self.calculateFitness(parent2Index)
                 newPopulation.append(self.population[parent1Index])
                 newPopulation.append(self.population[parent2Index])
-                print("APENDUJEM U GENERACIJI: " + str(i) + " izraz: " + newPopulation[j][0].stringNode()+ " -> " + str(self.calculateFitness(j)))
-                print("APENDUJEM U GENERACIJI: " + str(i) + " izraz: " + newPopulation[j+1][0].stringNode()+ " -> " + str(self.calculateFitness(j+1)))
+                #print("APENDUJEM U GENERACIJI: " + str(i) + " izraz: " + newPopulation[j][0].stringNode()+ " -> " + str(self.calculateFitness(j)))
+                #print("APENDUJEM U GENERACIJI: " + str(i) + " izraz: " + newPopulation[j+1][0].stringNode()+ " -> " + str(self.calculateFitness(j+1)))
                 #print("APENDUJEMO: ")
                 #print(newPopulation[j][0].stringNode())
                 #print(newPopulation[j+1][0].stringNode())
 
                 #print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
                 j = j + 2
+                self.population = []
+                for x in copyPopulation:
+                    self.population.append(x)
 
             self.population = newPopulation
             newPopulation = []
@@ -415,6 +429,16 @@ class GP:
     def setFinalPath(self,x):
         self.finalPath = x
 
+    def betterMutation(self,index):
+        randomNumber = random.random()
+        if self.MUTATION_RATE > randomNumber:
+            self.localPath = []
+            self.population[index][0].getRandomPath(self)
+            self.setPath(self.localPath)
+            self.population[index][0].mutateInPath(self.localPath,self)
+
+
+
 
     def betterCrossover(self,index1,index2):
         # UZIMAMO NASUMICNO PODSTABLO1
@@ -423,7 +447,6 @@ class GP:
         self.population[index1][0].getRandomPath(self)
         self.setPath(self.localPath)
         self.population[index1][0].getSubTreeFromPath(self.localPath,self)
-        print("MUFLJUZ:" + str(self.path))
         subtree1 = self.getCrossoverNode()
         path1 = self.path
         self.localPath = []
@@ -433,12 +456,6 @@ class GP:
         self.population[index2][0].getSubTreeFromPath(self.localPath,self)
         subtree2 = self.getCrossoverNode()
         path2 = self.path
-        print("+++++++++++++++++++++++++++++++++++++++++++++++++")
-        print(subtree1.stringNode())
-        print(path1)
-        print(subtree2.stringNode())
-        print(path2)
-        print("+++++++++++++++++++++++++++++++++++++++++++++++++")
         self.population[index2][0].putSubTree(path2,subtree1)
         self.population[index1][0].putSubTree(path1,subtree2)
 
