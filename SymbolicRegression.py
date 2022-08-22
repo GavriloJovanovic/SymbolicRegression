@@ -88,49 +88,6 @@ class Node:
         self.getPath(GP)
 
 
-    #zapamtiti sve validne cvorove (set)
-    #l pa d, broj covrova, [0,broj], 7
-    def getSubTree(self,appendCrossoverProb,tree):
-        if (self.type == Type.FIRST or self.type == Type.TRIGONOMETRY):
-            randomNumber = random.random()
-            tree.path.append('l')
-            if randomNumber < tree.getCrossoverProbability():
-                tree.setCrossoverProbability(0)
-                tree.setFinalPath(tree.path)
-                tree.setCrossoverNode(self.child1)
-            else:
-                 tree.setCrossoverProbability(tree.getCrossoverProbability() + appendCrossoverProb)
-                 self.child1.getSubTree(appendCrossoverProb,tree)
-                 if self.type == Type.TRIGONOMETRY and tree.getCrossoverProbability() > 0.001:
-                     tree.path.pop()
-
-        elif self.type == Type.OPERATOR:
-            randomNumber = random.random()
-            tree.path.append('l')
-            if randomNumber < tree.getCrossoverProbability():
-                tree.setCrossoverProbability(0)
-                tree.setFinalPath(tree.path)
-                tree.setCrossoverNode(self.child1)
-            else:
-                tree.setCrossoverProbability(tree.getCrossoverProbability() + appendCrossoverProb)
-                self.child1.getSubTree(appendCrossoverProb,tree)
-                if tree.getCrossoverProbability() > 0.001:
-                    tree.path.pop()
-
-            if tree.getCrossoverProbability() > 0.001:
-                randomNumber = random.random()
-                tree.path.append('r')
-                if randomNumber < tree.getCrossoverProbability():
-                    tree.setCrossoverProbability(0)
-                    tree.setFinalPath(tree.path)
-                    tree.setCrossoverNode(self.child2)
-                else:
-                    tree.setCrossoverProbability(tree.getCrossoverProbability() + appendCrossoverProb)
-                    self.child2.getSubTree(appendCrossoverProb,tree)
-                    if tree.getCrossoverProbability() > 0.001:
-                        tree.path.pop()
-
-
     def setChild1(self,node):
         self.child1 = node
 
@@ -258,12 +215,6 @@ class GP:
             self.population[i][1] = self.calculateFitness(i)
 
     def GP(self):
-        #print("POCETAK")
-        #for j in range(self.POPULATION_NUMBER):
-            #print("Izraz broj. " + str(j) + " je " + self.population[j][0].stringNode() + " a fitness je: " + str(self.population[j][1]))
-        #print("==========================================================================")
-
-
         newPopulation = []
 
         for i in range(self.ITERATION_NUMBER):
@@ -281,7 +232,6 @@ class GP:
             j = 0
             while j < self.ELITISM_SIZE:
                 newPopulation.append(self.population[j])
-                #print("APENDUJEM U GENERACIJI: " + str(i) + " izraz: " + newPopulation[j][0].stringNode() + " -> " + str(self.calculateFitness(j)))
                 
                 j = j + 1
 
@@ -292,43 +242,21 @@ class GP:
 
             while j < self.POPULATION_NUMBER:
                 randomForCrossoverOrMutation = random.random()
-                if randomForCrossoverOrMutation > self.MUTATION_RATE and j != self.POPULATION_NUMBER-1:
+                if randomForCrossoverOrMutation-2 > self.MUTATION_RATE and j != self.POPULATION_NUMBER-1:
                     parent1Index = j
-                    '''
-                    while True:
-                        parent2Index = self.tournamentSelection()
-                        if parent1Index != parent2Index:
-                            break
-                    '''
                     parent2Index = j+1
                     self.betterCrossover(parent1Index,parent2Index)
-                    #print()
                     self.population[parent1Index][1] = self.calculateFitness(parent1Index)
-                    #print()
                     self.population[parent2Index][1] = self.calculateFitness(parent2Index)
                     newPopulation.append(self.population[parent1Index])
                     newPopulation.append(self.population[parent2Index])
-                    #print("APENDUJEM U GENERACIJI: " + str(i) + " izraz: " + newPopulation[j][0].stringNode()+ " -> " + str(self.calculateFitness(j)))
-                    #print("APENDUJEM U GENERACIJI: " + str(i) + " izraz: " + newPopulation[j+1][0].stringNode()+ " -> " + str(self.calculateFitness(j+1)))
-                    #print("APENDUJEMO: ")
-                    #print(newPopulation[j][0].stringNode())
-                    #print(newPopulation[j+1][0].stringNode())
-
-                    #print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
                     j = j + 2
                     self.population = copyPopulation.copy()
                 else:
                     #indexChosen = self.tournamentSelection()
-                    self.betterMutation(j,self)
+                    self.betterMutation(j)
                     self.population[j][1] = self.calculateFitness(j)
                     newPopulation.append(self.population[j])
-                    #print("APENDUJEM U GENERACIJI: " + str(i) + " izraz: " + newPopulation[j][0].stringNode()+ " -> " + str(self.calculateFitness(j)))
-                    #print("APENDUJEM U GENERACIJI: " + str(i) + " izraz: " + newPopulation[j+1][0].stringNode()+ " -> " + str(self.calculateFitness(j+1)))
-                    #print("APENDUJEMO: ")
-                    #print(newPopulation[j][0].stringNode())
-                    #print(newPopulation[j+1][0].stringNode())
-
-                    #print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
                     j = j + 1
                     self.population = copyPopulation.copy()
 
@@ -338,31 +266,6 @@ class GP:
         print("Poslednja GLUPOST: ")
         for i in range(len(self.population)):
             print("Izraz broj. " + str(i) + " je " + self.population[i][0].stringNode() + " a fitness je: " + str(self.population[i][1]))
-            #print("STARA POPULACIJA")
-            #for j in range(self.POPULATION_NUMBER):
-            #    print("Izraz broj. " + str(j) + " je " + self.population[j][0].stringNode() + " a fitness je: " + str(self.population[j][1]))
-            #print("===================================================================================")
-            #print("NOVA POPULACIJA")
-            #for j in range(self.POPULATION_NUMBER):
-            #    print("Izraz broj. " + str(j) + " je " + newPopulation[j][0].stringNode() + " a fitness je: " + str(newPopulation[j][1]))
-
-
-            #print("======================================================================")
-            #print("Ispisujemo izrze")
-            #for j in range(self.POPULATION_NUMBER):
-                #print("Izraz broj. " + str(j) + " je " + self.population[j][0].stringNode() + " a fitness je: " + str(self.population[j][1]))
-
-            #print("PROVERAVAMO JEDNAKOST: ", end="")
-            #bul = True
-            #for j in range(self.POPULATION_NUMBER):
-                #if self.population[j] != newPopulation[j]:
-                    #bul = False
-            #print(bul)
-
-
-
-
-
 
 
     def tournamentSelection(self):
@@ -402,7 +305,7 @@ class GP:
     def setFinalPath(self,x):
         self.finalPath = x
 
-    def betterMutation(self,index,GP):
+    def betterMutation(self,index):
         self.localPath = []
         numberOfNodesInIndex = self.population[index][0].getDepthOfNode()
         self.population[index][0].getRandomPath(self)

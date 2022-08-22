@@ -3,8 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from gplearn.genetic import SymbolicRegressor
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
 from sympy import *
 
