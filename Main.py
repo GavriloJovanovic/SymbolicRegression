@@ -11,7 +11,7 @@ try:
     
     niz = [round((x - 30) / 10, 3) for x in range(0, 61, 2)]
     trening = [[niz[i],f(niz[i])] for i in range(0,31)]
-    drvo = SymbolicRegression.GP(trening, 100, 40, 5, 40, 0.2)
+    drvo = SymbolicRegression.GP(trening, 1000, 40, 10, 300, 0.1)
     drvo.printPopulation()
     print("POCINJEMO")
     print("============================================================")

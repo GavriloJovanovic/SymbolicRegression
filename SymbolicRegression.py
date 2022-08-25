@@ -225,9 +225,15 @@ class GP:
             print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
             print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
             print("Pre promene u generaiciji: " + str(i))
+            avg_fit = 0
             for j in range(len(self.population)):
-                 print("Izraz broj. " + str(j) + " je " + self.population[j][0].stringNode() + " a fitness je: " + str(self.population[j][1]))
+                print("Izraz broj. " + str(j) + " je " + self.population[j][0].stringNode() + " a fitness je: " + str(self.population[j][1]))
+                avg_fit = avg_fit + self.population[j][1]
 
+            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+            avg_fit = avg_fit / (len(self.population))
+            print("SREDNJA VREDNOST FITNESSA JE: " + str(avg_fit))
+            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
             print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
             j = 0
             while j < self.ELITISM_SIZE:
@@ -242,9 +248,9 @@ class GP:
 
             while j < self.POPULATION_NUMBER:
                 randomForCrossoverOrMutation = random.random()
-                if randomForCrossoverOrMutation-2 > self.MUTATION_RATE and j != self.POPULATION_NUMBER-1:
-                    parent1Index = j
-                    parent2Index = j+1
+                if randomForCrossoverOrMutation > self.MUTATION_RATE and j != self.POPULATION_NUMBER-1:
+                    parent1Index = self.tournamentSelection()
+                    parent2Index = self.tournamentSelection()
                     self.betterCrossover(parent1Index,parent2Index)
                     self.population[parent1Index][1] = self.calculateFitness(parent1Index)
                     self.population[parent2Index][1] = self.calculateFitness(parent2Index)
@@ -253,10 +259,10 @@ class GP:
                     j = j + 2
                     self.population = copyPopulation.copy()
                 else:
-                    #indexChosen = self.tournamentSelection()
-                    self.betterMutation(j)
-                    self.population[j][1] = self.calculateFitness(j)
-                    newPopulation.append(self.population[j])
+                    indexChosen = self.tournamentSelection()
+                    self.betterMutation(indexChosen)
+                    self.population[indexChosen][1] = self.calculateFitness(indexChosen)
+                    newPopulation.append(self.population[indexChosen])
                     j = j + 1
                     self.population = copyPopulation.copy()
 
@@ -405,7 +411,7 @@ class GP:
         #print()
         #print("GOTOV JEDAN")
         #print("=======================================================================================")
-        return err
+        return err / testLength
 
 
     def setModificationTreeOnNone(self):

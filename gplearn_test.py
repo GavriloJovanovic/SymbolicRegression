@@ -36,8 +36,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random
 # First Test
 function_set = ['add', 'sub', 'mul', 'div','cos','sin','neg','inv']
 est_gp = SymbolicRegressor(population_size=1000,function_set=function_set,
-                           generations=40, stopping_criteria=0.01,
-                           p_crossover=0, p_subtree_mutation=0.1,
+                           generations=7, stopping_criteria=0.01,
+                           p_crossover=0.7, p_subtree_mutation=0.1,
                            p_hoist_mutation=0.05, p_point_mutation=0.1,
                            max_samples=0.9, verbose=1,
                            parsimony_coefficient=0.01, random_state=0,
